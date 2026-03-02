@@ -131,7 +131,6 @@ declare module '$env/static/private' {
 	export const npm_config_global_prefix: string;
 	export const npm_node_execpath: string;
 	export const LC_NUMERIC: string;
-	export const OLDPWD: string;
 	export const NODE_ENV: string;
 }
 
@@ -312,7 +311,6 @@ declare module '$env/dynamic/private' {
 		npm_config_global_prefix: string;
 		npm_node_execpath: string;
 		LC_NUMERIC: string;
-		OLDPWD: string;
 		NODE_ENV: string;
 		[key: `PUBLIC_${string}`]: undefined;
 		[key: `${string}`]: string | undefined;
