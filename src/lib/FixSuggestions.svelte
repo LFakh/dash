@@ -49,7 +49,6 @@ res.setHeader("Content-Security-Policy",
     <div class="code-block">
       <pre><code>{selectedSuggestion.code}</code></pre>
     </div>
-    <button class="apply-btn">Apply Fix</button>
   </div>
 </div>
 
@@ -153,7 +152,6 @@ res.setHeader("Content-Security-Policy",
     background-color: #2c3e50;
     border-radius: 6px;
     padding: 1.25rem;
-    margin-bottom: 1.25rem;
     overflow-x: auto;
   }
 
@@ -166,21 +164,5 @@ res.setHeader("Content-Security-Policy",
     font-size: 0.85rem;
     color: #ecf0f1;
     line-height: 1.5;
-  }
-
-  .apply-btn {
-    padding: 0.7rem 1.5rem;
-    background-color: #27ae60;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .apply-btn:hover {
-    background-color: #229954;
   }
 </style>

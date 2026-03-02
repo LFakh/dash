@@ -1,9 +1,9 @@
 <script lang="ts">
-  import StatCard from './lib/StatCard.svelte'
-  import FindingsTable from './lib/FindingsTable.svelte'
-  import ChatInterface from './lib/ChatInterface.svelte'
-  import FixSuggestions from './lib/FixSuggestions.svelte'
-  import DetailsSection from './lib/DetailsSection.svelte'
+  import StatCard from '$lib/StatCard.svelte'
+  import FindingsTable from '$lib/FindingsTable.svelte'
+  import ChatInterface from '$lib/ChatInterface.svelte'
+  import FixSuggestions from '$lib/FixSuggestions.svelte'
+  import DetailsSection from '$lib/DetailsSection.svelte'
 
   const stats = [
     { title: 'Active Engagements', value: 4, color: '#2c3e50' },
@@ -79,9 +79,6 @@
 <div class="dashboard">
   <header class="header">
     <h1 class="logo">SecureVault</h1>
-    <div class="search-container">
-      <input type="text" placeholder="Search..." class="search-input" />
-    </div>
   </header>
 
   <main class="main-content">
@@ -137,9 +134,6 @@
     background-color: #2c3e50;
     color: white;
     padding: 1.5rem 2rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
@@ -147,30 +141,6 @@
     font-size: 1.8rem;
     font-weight: 700;
     letter-spacing: -0.5px;
-  }
-
-  .search-container {
-    flex: 0 0 300px;
-  }
-
-  .search-input {
-    width: 100%;
-    padding: 0.7rem 1rem;
-    border: none;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    transition: background-color 0.2s;
-  }
-
-  .search-input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .search-input:focus {
-    outline: none;
-    background-color: rgba(255, 255, 255, 0.15);
   }
 
   .main-content {
@@ -224,16 +194,6 @@
   }
 
   @media (max-width: 768px) {
-    .header {
-      flex-direction: column;
-      gap: 1rem;
-    }
-
-    .search-container {
-      flex: 1;
-      width: 100%;
-    }
-
     .main-content {
       padding: 1rem;
     }

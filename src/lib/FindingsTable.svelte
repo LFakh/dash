@@ -39,9 +39,21 @@
   function getSeverityClass(severity: string): string {
     return severity.toLowerCase()
   }
+
+  function deleteSelected() {
+    findings = findings.filter(f => !selectedFindings.includes(f.id))
+    selectedFindings = []
+    allSelected = false
+  }
 </script>
 
 <div class="table-container">
+  {#if selectedFindings.length > 0}
+    <div class="actions-bar">
+      <span class="selected-count">{selectedFindings.length} finding{selectedFindings.length !== 1 ? 's' : ''} selected</span>
+      <button class="delete-btn" on:click={deleteSelected}>Delete Selected</button>
+    </div>
+  {/if}
   <div class="table-wrapper">
     <table class="findings-table">
       <thead>
@@ -221,6 +233,37 @@
     border-radius: 4px;
     font-weight: 600;
     font-size: 0.8rem;
+  }
+
+  .actions-bar {
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #ecf0f1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .selected-count {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #2c3e50;
+  }
+
+  .delete-btn {
+    padding: 0.6rem 1.2rem;
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .delete-btn:hover {
+    background-color: #c0392b;
   }
 
   @media (max-width: 1200px) {
