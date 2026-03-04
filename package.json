@@ -23,11 +23,17 @@
   },
   "overrides": {
     "cookie": "^0.7.0",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "inflight": "latest",
+    "rimraf": "^4.0.0",
+    "glob": "^9.0.0",
+    "whatwg-encoding": "@exodus/bytes",
+    "node-domexception": "npm:@empty"
   },
   "dependencies": {
     "pg": "^8.19.0",
     "ddgs": "^1.0.0",
-    "node-fetch": "^3.0.0"
+    "node-fetch": "^3.0.0",
+    "puppeteer": "^24.15.0"
   }
 }

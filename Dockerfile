@@ -1,5 +1,5 @@
 # Stage 1: Build the Full-stack dashboard
-FROM docker.io/library/node:20-alpine AS build
+FROM docker.io/library/node:22-alpine AS build
 
 WORKDIR /app
 
@@ -12,7 +12,7 @@ COPY . .
 RUN npm run build
 
 # Stage 2: Create production image
-FROM docker.io/library/node:20-alpine AS production
+FROM docker.io/library/node:22-alpine AS production
 
 WORKDIR /app
 
