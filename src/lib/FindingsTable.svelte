@@ -1,5 +1,5 @@
 <script lang="ts">
-  export let findings: Array<{
+  interface Finding {
     id: number
     severity: string
     name: string
@@ -11,12 +11,21 @@
     usedInRansomware: string
     dateAdded: string
     age: number
-    sla: number
+    sla: string | number
     reporter: string
-  }>
+  }
+
+  export let findings: Finding[] = []
 
   let selectedFindings: number[] = []
   let allSelected = false
+
+  $: if (findings.length > 0) {
+    allSelected = selectedFindings.length === findings.length
+  } else {
+    allSelected = false;
+    selectedFindings = [];
+  }
 
   function toggleAll() {
     if (allSelected) {
@@ -24,7 +33,6 @@
     } else {
       selectedFindings = findings.map(f => f.id)
     }
-    allSelected = !allSelected
   }
 
   function toggleFinding(id: number) {
@@ -33,7 +41,6 @@
     } else {
       selectedFindings = [...selectedFindings, id]
     }
-    allSelected = selectedFindings.length === findings.length
   }
 
   function getSeverityClass(severity: string): string {
@@ -41,9 +48,10 @@
   }
 
   function deleteSelected() {
-    findings = findings.filter(f => !selectedFindings.includes(f.id))
-    selectedFindings = []
-    allSelected = false
+    // This is placeholder logic for now, actual deletion would involve an API call
+    console.log('Deleting selected findings:', selectedFindings);
+    findings = findings.filter(f => !selectedFindings.includes(f.id));
+    selectedFindings = [];
   }
 </script>
 
@@ -55,60 +63,64 @@
     </div>
   {/if}
   <div class="table-wrapper">
-    <table class="findings-table">
-      <thead>
-        <tr>
-          <th class="checkbox-col">
-            <input type="checkbox" checked={allSelected} on:change={toggleAll} />
-          </th>
-          <th>Severity</th>
-          <th>Name</th>
-          <th>CWE</th>
-          <th>Vulnerability ID</th>
-          <th>EPSS Score</th>
-          <th>EPSS Percentile</th>
-          <th>Known Exploited</th>
-          <th>Used in Ransomware</th>
-          <th>Date Added</th>
-          <th>Age</th>
-          <th>SLA</th>
-          <th>Reporter</th>
-        </tr>
-      </thead>
-      <tbody>
-        {#each findings as finding}
-          <tr class:selected={selectedFindings.includes(finding.id)}>
-            <td class="checkbox-col">
-              <input
-                type="checkbox"
-                checked={selectedFindings.includes(finding.id)}
-                on:change={() => toggleFinding(finding.id)}
-              />
-            </td>
-            <td>
-              <span class="severity-badge {getSeverityClass(finding.severity)}">
-                {finding.severity}
-              </span>
-            </td>
-            <td class="name-col">{finding.name}</td>
-            <td>{finding.cwe}</td>
-            <td>
-              <button class="link" on:click|preventDefault>{finding.vulnerabilityId}</button>
-            </td>
-            <td>{finding.epssScore}</td>
-            <td>{finding.epssPercentile}</td>
-            <td>{finding.knownExploited}</td>
-            <td>{finding.usedInRansomware}</td>
-            <td>{finding.dateAdded}</td>
-            <td>{finding.age}</td>
-            <td>
-              <span class="sla-badge">{finding.sla}</span>
-            </td>
-            <td>{finding.reporter}</td>
+    {#if findings.length > 0}
+      <table class="findings-table">
+        <thead>
+          <tr>
+            <th class="checkbox-col">
+              <input type="checkbox" checked={allSelected} on:change={toggleAll} />
+            </th>
+            <th>Severity</th>
+            <th>Name</th>
+            <th>CWE</th>
+            <th>Vulnerability ID</th>
+            <th>EPSS Score</th>
+            <th>EPSS Percentile</th>
+            <th>Known Exploited</th>
+            <th>Used in Ransomware</th>
+            <th>Date Added</th>
+            <th>Age</th>
+            <th>SLA</th>
+            <th>Reporter</th>
           </tr>
-        {/each}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {#each findings as finding}
+            <tr class:selected={selectedFindings.includes(finding.id)}>
+              <td class="checkbox-col">
+                <input
+                  type="checkbox"
+                  checked={selectedFindings.includes(finding.id)}
+                  on:change={() => toggleFinding(finding.id)}
+                />
+              </td>
+              <td>
+                <span class="severity-badge {getSeverityClass(finding.severity)}">
+                  {finding.severity}
+                </span>
+              </td>
+              <td class="name-col">{finding.name}</td>
+              <td>{finding.cwe}</td>
+              <td>
+                <button class="link" on:click|preventDefault>{finding.vulnerabilityId}</button>
+              </td>
+              <td>{finding.epssScore}</td>
+              <td>{finding.epssPercentile}</td>
+              <td>{finding.knownExploited}</td>
+              <td>{finding.usedInRansomware}</td>
+              <td>{finding.dateAdded}</td>
+              <td>{finding.age}</td>
+              <td>
+                <span class="sla-badge">{finding.sla}</span>
+              </td>
+              <td>{finding.reporter}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    {:else}
+      <p class="no-findings">No findings available.</p>
+    {/if}
   </div>
 </div>
 
@@ -264,6 +276,13 @@
 
   .delete-btn:hover {
     background-color: #c0392b;
+  }
+
+  .no-findings {
+    text-align: center;
+    padding: 2rem;
+    color: #7f8c8d;
+    font-size: 1.1rem;
   }
 
   @media (max-width: 1200px) {

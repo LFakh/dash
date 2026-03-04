@@ -3,77 +3,16 @@
   import FindingsTable from '$lib/FindingsTable.svelte'
   import ChatInterface from '$lib/ChatInterface.svelte'
   import FixSuggestions from '$lib/FixSuggestions.svelte'
-  import DetailsSection from '$lib/DetailsSection.svelte'
 
-  const stats = [
-    { title: 'Active Engagements', value: 4, color: '#2c3e50' },
-    { title: 'Last Seven Days', value: 12, color: '#e74c3c' },
-    { title: 'Closed In Last Seven Days', value: 0, color: '#27ae60' },
-    { title: 'Risk Accepted', value: 0, color: '#f39c12' }
-  ]
+  export let data;
 
-  const mockFindings = [
-    {
-      id: 1,
-      severity: 'Critical',
-      name: 'SQL Injection in Login Form',
-      cwe: 'CWE-89',
-      vulnerabilityId: '693',
-      epssScore: 'N.A.',
-      epssPercentile: 'N.A.',
-      knownExploited: 'No',
-      usedInRansomware: 'No',
-      dateAdded: 'March 1, 2026',
-      age: 1,
-      sla: 95,
-      reporter: 'Admin User'
-    },
-    {
-      id: 2,
-      severity: 'High',
-      name: 'Cross-Site Scripting (XSS)',
-      cwe: 'CWE-79',
-      vulnerabilityId: '264',
-      epssScore: 'N.A.',
-      epssPercentile: 'N.A.',
-      knownExploited: 'No',
-      usedInRansomware: 'No',
-      dateAdded: 'March 1, 2026',
-      age: 1,
-      sla: 92,
-      reporter: 'Admin User'
-    },
-    {
-      id: 3,
-      severity: 'Medium',
-      name: 'Missing Anti-Clickjacking Header',
-      cwe: 'CWE-1021',
-      vulnerabilityId: '1021',
-      epssScore: 'N.A.',
-      epssPercentile: 'N.A.',
-      knownExploited: 'No',
-      usedInRansomware: 'No',
-      dateAdded: 'March 1, 2026',
-      age: 1,
-      sla: 89,
-      reporter: 'Admin User'
-    },
-    {
-      id: 4,
-      severity: 'Low',
-      name: 'Information Disclosure',
-      cwe: 'CWE-200',
-      vulnerabilityId: '693',
-      epssScore: 'N.A.',
-      epssPercentile: 'N.A.',
-      knownExploited: 'No',
-      usedInRansomware: 'No',
-      dateAdded: 'March 1, 2026',
-      age: 1,
-      sla: 119,
-      reporter: 'Admin User'
-    }
-  ]
+  const severityColors = {
+    critical: '#e74c3c',
+    high: '#f39c12',
+    medium: '#3498db',
+    low: '#2ecc71',
+    info: '#95a5a6'
+  };
 </script>
 
 <div class="dashboard">
@@ -82,32 +21,34 @@
   </header>
 
   <main class="main-content">
-    <div class="stats-grid">
-      {#each stats as stat}
-        <StatCard title={stat.title} value={stat.value} color={stat.color} />
-      {/each}
-    </div>
-
-    <div class="details-grid">
-      <DetailsSection title="Engagement Details" />
-      <DetailsSection title="Finding Details" />
-      <DetailsSection title="Finding Details" />
-      <DetailsSection title="Finding Details" />
-    </div>
-
-    <div class="llm-section">
-      <div class="chat-wrapper">
-        <ChatInterface />
+    {#if data.error}
+      <div class="error-message">
+        <h2>Failed to Load Data</h2>
+        <p>{data.error}</p>
       </div>
-      <div class="suggestions-wrapper">
-        <FixSuggestions />
+    {:else}
+      <div class="stats-grid">
+        <StatCard title="Critical Findings" value={data.stats.critical} color={severityColors.critical} />
+        <StatCard title="High Findings" value={data.stats.high} color={severityColors.high} />
+        <StatCard title="Medium Findings" value={data.stats.medium} color={severityColors.medium} />
+        <StatCard title="Low Findings" value={data.stats.low} color={severityColors.low} />
+        <StatCard title="Info Findings" value={data.stats.info} color={severityColors.info} />
       </div>
-    </div>
 
-    <div class="table-section">
-      <h2 class="section-title">Security Findings</h2>
-      <FindingsTable findings={mockFindings} />
-    </div>
+      <div class="llm-section">
+        <div class="chat-wrapper">
+          <ChatInterface />
+        </div>
+        <div class="suggestions-wrapper">
+          <FixSuggestions />
+        </div>
+      </div>
+
+      <div class="table-section">
+        <h2 class="section-title">Security Findings</h2>
+        <FindingsTable findings={data.findings} />
+      </div>
+    {/if}
   </main>
 </div>
 
@@ -149,17 +90,23 @@
     margin: 0 auto;
     width: 100%;
   }
+  
+  .error-message {
+    background-color: #fbe9e7;
+    color: #c62828;
+    border: 1px solid #e57373;
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+  }
+
+  .error-message h2 {
+    margin-bottom: 0.5rem;
+  }
 
   .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-  }
-
-  .details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1.5rem;
     margin-bottom: 2rem;
   }

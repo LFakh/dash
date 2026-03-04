@@ -1,7 +1,5 @@
 <script lang="ts">
-  let messages = [
-    { role: 'assistant', content: 'Hello! I can help you analyze and fix security findings. How can I assist you today?' }
-  ]
+  let messages: { role: string; content: string }[] = []
   let inputMessage = ''
 
   function sendMessage() {

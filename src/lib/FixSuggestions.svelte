@@ -1,29 +1,19 @@
 <script lang="ts">
-  const suggestions = [
-    {
-      id: 1,
-      severity: 'Critical',
-      title: 'SQL Injection Fix',
-      description: 'Use parameterized queries or prepared statements to prevent SQL injection attacks.',
-      code: `// Bad
-const query = "SELECT * FROM users WHERE id = " + userId;
+  interface Suggestion {
+    id: number;
+    severity: string;
+    title: string;
+    description: string;
+    code: string;
+  }
 
-// Good
-const query = "SELECT * FROM users WHERE id = ?";
-db.execute(query, [userId]);`
-    },
-    {
-      id: 2,
-      severity: 'High',
-      title: 'XSS Prevention',
-      description: 'Sanitize user input and implement Content Security Policy headers.',
-      code: `// Add CSP header
-res.setHeader("Content-Security-Policy",
-  "default-src 'self'; script-src 'self'");`
-    }
-  ]
+  let suggestions: Suggestion[] = []
+  let selectedSuggestion: Suggestion | null = null
 
-  let selectedSuggestion = suggestions[0]
+  // Watch for changes in suggestions and automatically select the first one if available
+  $: if (suggestions.length > 0 && selectedSuggestion === null) {
+    selectedSuggestion = suggestions[0];
+  }
 </script>
 
 <div class="fix-suggestions">
@@ -34,7 +24,7 @@ res.setHeader("Content-Security-Policy",
   <div class="suggestions-list">
     {#each suggestions as suggestion}
       <button
-        class="suggestion-item {selectedSuggestion.id === suggestion.id ? 'active' : ''}"
+        class="suggestion-item {selectedSuggestion?.id === suggestion.id ? 'active' : ''}"
         on:click={() => selectedSuggestion = suggestion}
       >
         <span class="severity-badge {suggestion.severity.toLowerCase()}">{suggestion.severity}</span>
@@ -43,13 +33,19 @@ res.setHeader("Content-Security-Policy",
     {/each}
   </div>
 
-  <div class="suggestion-detail">
-    <h4 class="detail-title">{selectedSuggestion.title}</h4>
-    <p class="detail-description">{selectedSuggestion.description}</p>
-    <div class="code-block">
-      <pre><code>{selectedSuggestion.code}</code></pre>
+  {#if selectedSuggestion}
+    <div class="suggestion-detail">
+      <h4 class="detail-title">{selectedSuggestion.title}</h4>
+      <p class="detail-description">{selectedSuggestion.description}</p>
+      <div class="code-block">
+        <pre><code>{selectedSuggestion.code}</code></pre>
+      </div>
     </div>
-  </div>
+  {:else}
+    <div class="suggestion-detail no-suggestions">
+      <p>No fix suggestions available at this time.</p>
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -122,12 +118,6 @@ res.setHeader("Content-Security-Policy",
     color: #e67e22;
   }
 
-  .suggestion-title {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #2c3e50;
-  }
-
   .suggestion-detail {
     flex: 1;
     padding: 1.5rem;
@@ -164,5 +154,13 @@ res.setHeader("Content-Security-Policy",
     font-size: 0.85rem;
     color: #ecf0f1;
     line-height: 1.5;
+  }
+
+  .no-suggestions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #7f8c8d;
+    font-size: 1.1rem;
   }
 </style>
