@@ -1,19 +1,58 @@
 <script lang="ts">
-  let messages: { role: string; content: string }[] = []
+  import { browser } from '$app/environment';
+
+  let messages: { role: string; content: string; type?: 'llm_response' }[] = []
   let inputMessage = ''
+  let isLoading = false;
 
-  function sendMessage() {
-    if (!inputMessage.trim()) return
+  // Function to simulate sending data to the LLM endpoint
+  async function sendMessage() {
+    if (!inputMessage.trim() || isLoading) return;
 
-    messages = [...messages, { role: 'user', content: inputMessage }]
-    inputMessage = ''
+    const userMessage = inputMessage;
+    messages = [...messages, { role: 'user', content: userMessage }];
+    inputMessage = '';
+    isLoading = true;
 
-    setTimeout(() => {
-      messages = [...messages, {
-        role: 'assistant',
-        content: 'I understand your concern. Let me analyze that finding and provide recommendations.'
-      }]
-    }, 1000)
+    // Placeholder vulnerability data for now
+    // In a real scenario, this would come from user selection or specific input fields.
+    const vulnerability = {
+      description: userMessage, // Using user input as description
+      severity: 'Medium', // Placeholder
+      cwe: 'CWE-20' // Placeholder
+    };
+
+    try {
+      const response = await fetch('/api/llm/prioritize', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(vulnerability)
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const llmResponse = await response.json();
+
+      if (llmResponse.error) {
+        messages = [...messages, { role: 'assistant', content: `Error from LLM: ${llmResponse.error}` }];
+      } else {
+        messages = [...messages, {
+          role: 'assistant',
+          content: `New Priority: ${llmResponse.new_priority}\nJustification: ${llmResponse.justification}`,
+          type: 'llm_response'
+        }];
+      }
+
+    } catch (error) {
+      console.error('Failed to communicate with LLM endpoint:', error);
+      messages = [...messages, { role: 'assistant', content: 'Sorry, I could not get a response from the LLM service.' }];
+    } finally {
+      isLoading = false;
+    }
   }
 
   function handleKeyPress(event: KeyboardEvent) {
@@ -27,7 +66,7 @@
 <div class="chat-interface">
   <div class="chat-header">
     <h3 class="chat-title">LLM Chat Interface</h3>
-    <span class="status-indicator">Online</span>
+    <span class="status-indicator" class:loading={isLoading}>{isLoading ? 'Thinking...' : 'Online'}</span>
   </div>
 
   <div class="messages-container">
@@ -44,8 +83,9 @@
       on:keypress={handleKeyPress}
       placeholder="Ask about findings or request fix suggestions..."
       rows="3"
+      disabled={isLoading}
     />
-    <button on:click={sendMessage} class="send-btn">Send</button>
+    <button on:click={sendMessage} class="send-btn" disabled={isLoading}>Send</button>
   </div>
 </div>
 
@@ -81,6 +121,12 @@
     padding: 0.4rem 0.8rem;
     background-color: #d5f4e6;
     border-radius: 12px;
+    transition: background-color 0.3s;
+  }
+
+  .status-indicator.loading {
+    background-color: #f39c12;
+    color: white;
   }
 
   .messages-container {
@@ -155,5 +201,10 @@
 
   .send-btn:hover {
     background-color: #2980b9;
+  }
+
+  .send-btn:disabled, textarea:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 </style>
