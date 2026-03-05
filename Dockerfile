@@ -20,7 +20,6 @@ WORKDIR /app
 COPY --from=build /app/node_modules ./node_modules
 # Copy SvelteKit build output
 COPY --from=build /app/build ./build
-
 # Set a non-root user to run the app
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 USER appuser

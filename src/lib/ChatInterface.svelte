@@ -23,12 +23,12 @@
     };
 
     try {
-      const response = await fetch('/api/llm/prioritize', {
+      const response = await fetch('/api/llm/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(vulnerability)
+        body: JSON.stringify({ content: userMessage })
       });
 
       if (!response.ok) {
@@ -42,7 +42,7 @@
       } else {
         messages = [...messages, {
           role: 'assistant',
-          content: `New Priority: ${llmResponse.new_priority}\nJustification: ${llmResponse.justification}`,
+          content: llmResponse.response,
           type: 'llm_response'
         }];
       }

@@ -28,7 +28,7 @@
     suggestions = []; // Clear previous suggestions
 
     try {
-      const response = await fetch('http://localhost:8000/fetch_cwe_suggestions', { // Assuming AI service is accessible via localhost:8000 from SvelteKit dev server
+      const response = await fetch('http://ai_service:8000/fetch_cwe_suggestions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
