@@ -13,6 +13,9 @@
     low: '#2ecc71',
     info: '#95a5a6'
   };
+
+  // Extract unique CWE numbers from findings to pass to FixSuggestions
+  $: cweNumbers = [...new Set(data.findings.map(f => f.cwe).filter(cwe => cwe !== null && cwe !== undefined))];
 </script>
 
 <div class="dashboard">
@@ -40,7 +43,7 @@
           <ChatInterface />
         </div>
         <div class="suggestions-wrapper">
-          <FixSuggestions />
+          <FixSuggestions cweNumbers={cweNumbers} /> <!-- Pass cweNumbers prop -->
         </div>
       </div>
 

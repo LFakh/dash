@@ -7,30 +7,104 @@
     code: string;
   }
 
-  let suggestions: Suggestion[] = []
-  let selectedSuggestion: Suggestion | null = null
+  export let cweNumbers: number[] = []; // Prop to receive CWE numbers from parent
 
-  // Watch for changes in suggestions and automatically select the first one if available
-  $: if (suggestions.length > 0 && selectedSuggestion === null) {
-    selectedSuggestion = suggestions[0];
+  let suggestions: Suggestion[] = [];
+  let selectedSuggestion: Suggestion | null = null;
+  let isLoading = false;
+  let error: string | null = null;
+
+  // Function to fetch fix suggestions from the AI service
+  async function fetchFixSuggestions() {
+    if (cweNumbers.length === 0) {
+      suggestions = [];
+      selectedSuggestion = null;
+      error = null;
+      return;
+    }
+
+    isLoading = true;
+    error = null;
+    suggestions = []; // Clear previous suggestions
+
+    try {
+      const response = await fetch('http://localhost:8000/fetch_cwe_suggestions', { // Assuming AI service is accessible via localhost:8000 from SvelteKit dev server
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cwe_numbers: cweNumbers,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data && data.suggestions) {
+        suggestions = data.suggestions;
+        // Automatically select the first suggestion if available
+        if (suggestions.length > 0) {
+          selectedSuggestion = suggestions[0];
+        } else {
+          selectedSuggestion = null;
+        }
+      } else {
+        suggestions = [];
+        selectedSuggestion = null;
+        error = "No suggestions received or invalid format.";
+      }
+
+    } catch (e: any) {
+      console.error("Failed to fetch fix suggestions:", e);
+      error = `Failed to fetch fix suggestions: ${e.message}`;
+      suggestions = [];
+      selectedSuggestion = null;
+    } finally {
+      isLoading = false;
+    }
+  }
+
+  // Reactive statement to re-fetch suggestions when cweNumbers changes
+  $: if (cweNumbers && cweNumbers.length > 0) {
+    fetchFixSuggestions();
+  } else if (cweNumbers && cweNumbers.length === 0) {
+    // Clear suggestions if no CWE numbers are provided
+    suggestions = [];
+    selectedSuggestion = null;
+    error = null;
   }
 </script>
 
 <div class="fix-suggestions">
   <div class="suggestions-header">
     <h3 class="suggestions-title">LLM Findings Fix Suggestions</h3>
+    {#if isLoading}
+      <span class="loading-indicator">Loading...</span>
+    {:else if error}
+      <span class="error-indicator">Error: {error}</span>
+    {/if}
   </div>
 
   <div class="suggestions-list">
-    {#each suggestions as suggestion}
-      <button
-        class="suggestion-item {selectedSuggestion?.id === suggestion.id ? 'active' : ''}"
-        on:click={() => selectedSuggestion = suggestion}
-      >
-        <span class="severity-badge {suggestion.severity.toLowerCase()}">{suggestion.severity}</span>
-        <span class="suggestion-title">{suggestion.title}</span>
-      </button>
-    {/each}
+    {#if suggestions.length > 0}
+      {#each suggestions as suggestion}
+        <button
+          class="suggestion-item {selectedSuggestion?.id === suggestion.id ? 'active' : ''}"
+          on:click={() => selectedSuggestion = suggestion}
+        >
+          <span class="severity-badge {suggestion.severity.toLowerCase()}">{suggestion.severity}</span>
+          <span class="suggestion-title">{suggestion.title}</span>
+        </button>
+      {/each}
+    {:else if !isLoading && !error}
+      <div class="suggestion-detail no-suggestions">
+        <p>No fix suggestions available at this time.</p>
+      </div>
+    {/if}
   </div>
 
   {#if selectedSuggestion}
@@ -41,7 +115,7 @@
         <pre><code>{selectedSuggestion.code}</code></pre>
       </div>
     </div>
-  {:else}
+  {:else if !isLoading && !error && suggestions.length === 0}
     <div class="suggestion-detail no-suggestions">
       <p>No fix suggestions available at this time.</p>
     </div>
@@ -162,5 +236,16 @@
     align-items: center;
     color: #7f8c8d;
     font-size: 1.1rem;
+  }
+  .loading-indicator {
+    margin-left: 1rem;
+    color: #3498db;
+    font-weight: 500;
+  }
+
+  .error-indicator {
+    margin-left: 1rem;
+    color: #e74c3c;
+    font-weight: 500;
   }
 </style>
