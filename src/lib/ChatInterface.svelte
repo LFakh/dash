@@ -84,7 +84,7 @@
 
 <div class="chat-interface">
   <div class="chat-header">
-    <h3 class="chat-title">LLM Chat Interface</h3>
+    <h3 class="chat-title">Raybot Chat Interface</h3>
     <span class="status-indicator" class:loading={isLoading}>{isLoading ? 'Thinking...' : 'Online'}</span>
   </div>
 
