@@ -28,34 +28,68 @@
     suggestions = []; // Clear previous suggestions
 
     try {
-      const response = await fetch('http://ai_service:8000/fetch_cwe_suggestions', {
+      // Create prompt with CWE numbers
+      const prompt = `How to fix these CWE: ${cweNumbers.join(', ')}. Please provide specific fix suggestions for each CWE with code examples.`;
+      
+      const response = await fetch('https://free-api.cveoy.top/v3/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          cwe_numbers: cweNumbers,
+          prompt: prompt,
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      if (data && data.suggestions) {
-        suggestions = data.suggestions;
-        // Automatically select the first suggestion if available
-        if (suggestions.length > 0) {
-          selectedSuggestion = suggestions[0];
-        } else {
-          selectedSuggestion = null;
+      // Handle streaming response like in ChatInterface
+      const reader = response.body.getReader();
+      let fullMessage = '';
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
         }
+        const message = new TextDecoder().decode(value);
+        fullMessage += message;
+      }
+
+      // Clean up the response like in ChatInterface
+      if (fullMessage.includes("wxgpt@qq.com")) {
+        fullMessage = fullMessage.replace("欢迎使用 公益站! 站长合作邮箱：wxgpt@qq.com", "");
+      }
+      
+      // Replace incorrect characters
+      const charMap = {
+        '￠': 'à',
+        '￩': 'é',
+      };
+      
+      fullMessage = fullMessage.replace(/[￠￩]/g, function(match) {
+        return charMap[match];
+      });
+
+      if (fullMessage.trim()) {
+        // Parse the LLM response into suggestions format
+        // For now, create a single suggestion with the full response
+        suggestions = [{
+          id: 1,
+          severity: 'High',
+          title: `Fix Suggestions for CWE: ${cweNumbers.join(', ')}`,
+          description: 'LLM-generated fix suggestions for the identified CWE vulnerabilities.',
+          code: fullMessage.trim()
+        }];
+        
+        // Automatically select the first suggestion
+        selectedSuggestion = suggestions[0];
       } else {
         suggestions = [];
         selectedSuggestion = null;
-        error = "No suggestions received or invalid format.";
+        error = "No suggestions received from LLM.";
       }
 
     } catch (e: any) {
