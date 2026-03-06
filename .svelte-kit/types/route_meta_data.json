@@ -1,3 +1,11 @@
 {
-	"/": []
+	"/": [
+		"src/routes/+page.server.ts"
+	],
+	"/api/llm/chat": [
+		"src/routes/api/llm/chat/+server.ts"
+	],
+	"/api/llm/prioritize": [
+		"src/routes/api/llm/prioritize/+server.ts"
+	]
 }
