@@ -14,41 +14,60 @@
     inputMessage = '';
     isLoading = true;
 
-    // Placeholder vulnerability data for now
-    // In a real scenario, this would come from user selection or specific input fields.
-    const vulnerability = {
-      description: userMessage, // Using user input as description
-      severity: 'Medium', // Placeholder
-      cwe: 'CWE-20' // Placeholder
-    };
-
     try {
-      const response = await fetch('/api/llm/chat', {
+      // Use the same API endpoint and format as the original chat app
+      const response = await fetch('https://free-api.cveoy.top/v3/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ content: userMessage })
+        body: JSON.stringify({ prompt: userMessage })
       });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const llmResponse = await response.json();
+      // Handle streaming response like in the original app
+      const reader = response.body.getReader();
+      let fullMessage = '';
+      
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
+        }
+        const message = new TextDecoder().decode(value);
+        fullMessage += message;
+      }
 
-      if (llmResponse.error) {
-        messages = [...messages, { role: 'assistant', content: `Error from LLM: ${llmResponse.error}` }];
-      } else {
+      // Clean up the response like in the original app
+      if (fullMessage.includes("wxgpt@qq.com")) {
+        fullMessage = fullMessage.replace("欢迎使用 公益站! 站长合作邮箱：wxgpt@qq.com", "");
+      }
+      
+      // Replace incorrect characters
+      const charMap = {
+        '￠': 'à',
+        '￩': 'é',
+      };
+      
+      fullMessage = fullMessage.replace(/[￠￩]/g, function(match) {
+        return charMap[match];
+      });
+
+      if (fullMessage.trim()) {
         messages = [...messages, {
           role: 'assistant',
-          content: llmResponse.response,
+          content: fullMessage.trim(),
           type: 'llm_response'
         }];
+      } else {
+        messages = [...messages, { role: 'assistant', content: 'Sorry, I could not generate a response.' }];
       }
 
     } catch (error) {
-      console.error('Failed to communicate with LLM endpoint:', error);
+      console.error('Failed to communicate with remote LLM:', error);
       messages = [...messages, { role: 'assistant', content: 'Sorry, I could not get a response from the LLM service.' }];
     } finally {
       isLoading = false;
