@@ -1,5 +1,5 @@
 import type { RequestHandler } from '@sveltejs/kit';
-
+import Firecrawl from '@mendable/firecrawl-js';
 export const POST: RequestHandler = async ({ request }) => {
   try {
     const { cweNumbers } = await request.json();
