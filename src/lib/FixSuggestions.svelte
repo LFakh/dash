@@ -1,10 +1,7 @@
 <script lang="ts">
-  interface Suggestion {
-    id: number;
-    severity: string;
-    title: string;
-    description: string;
-    code: string;
+  interface CWESolution {
+    cweId: number;
+    solution: string;
   }
 
   interface ProcessingStep {
@@ -15,33 +12,33 @@
 
   export let cweNumbers: number[] = [];
 
-  let suggestions: Suggestion[] = [];
-  let selectedSuggestion: Suggestion | null = null;
+  let cweSolutions: CWESolution[] = [];
+  let expandedCWE: number | null = null;
   let isLoading = false;
   let error: string | null = null;
   let processingSteps: ProcessingStep[] = [
     { name: 'Initializing Request', status: 'pending' },
-    { name: 'Contacting LLM Service', status: 'pending' },
-    { name: 'Processing Response', status: 'pending' },
+    { name: 'Researching CWE Data', status: 'pending' },
+    { name: 'Fetching Solutions', status: 'pending' },
     { name: 'Formatting Results', status: 'pending' }
   ];
   let manualStart = false;
 
   async function fetchFixSuggestions() {
     if (cweNumbers.length === 0) {
-      suggestions = [];
-      selectedSuggestion = null;
+      cweSolutions = [];
       error = null;
       return;
     }
 
     isLoading = true;
     error = null;
-    suggestions = [];
+    cweSolutions = [];
+    expandedCWE = null;
     processingSteps = [
       { name: 'Initializing Request', status: 'pending' },
-      { name: 'Contacting LLM Service', status: 'pending' },
-      { name: 'Processing Response', status: 'pending' },
+      { name: 'Researching CWE Data', status: 'pending' },
+      { name: 'Fetching Solutions', status: 'pending' },
       { name: 'Formatting Results', status: 'pending' }
     ];
 
@@ -55,15 +52,13 @@
       processingSteps[1].status = 'running';
       processingSteps = processingSteps;
 
-      const prompt = `How to fix these CWE: ${cweNumbers.join(', ')}. Please provide specific fix suggestions for each CWE with code examples.`;
-
-      const response = await fetch('https://free-api.cveoy.top/v3/completions', {
+      const response = await fetch('/api/research', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: prompt,
+          cweNumbers: cweNumbers,
         }),
       });
 
@@ -75,60 +70,35 @@
       processingSteps[2].status = 'running';
       processingSteps = processingSteps;
 
-      const reader = response.body.getReader();
-      let fullMessage = '';
+      const researchData = await response.json();
 
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) {
-          break;
-        }
-        const message = new TextDecoder().decode(value);
-        fullMessage += message;
+      if (!researchData.success || !researchData.data) {
+        throw new Error("Failed to retrieve research data");
       }
 
       processingSteps[2].status = 'complete';
       processingSteps[3].status = 'running';
       processingSteps = processingSteps;
 
-      if (fullMessage.includes("wxgpt@qq.com")) {
-        fullMessage = fullMessage.replace("欢迎使用 公益站! 站长合作邮箱：wxgpt@qq.com", "");
-      }
+      cweSolutions = Object.entries(researchData.data).map(([cweKey, solution], index) => ({
+        cweId: parseInt(cweKey.replace('CWE-', '')),
+        solution: solution as string
+      }));
 
-      const charMap = {
-        '￠': 'à',
-        '￩': 'é',
-      };
-
-      fullMessage = fullMessage.replace(/[￠￩]/g, function(match) {
-        return charMap[match];
-      });
-
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      if (fullMessage.trim()) {
-        suggestions = [{
-          id: 1,
-          severity: 'High',
-          title: `Fix Suggestions for CWE: ${cweNumbers.join(', ')}`,
-          description: 'LLM-generated fix suggestions for the identified CWE vulnerabilities.',
-          code: fullMessage.trim()
-        }];
-
-        selectedSuggestion = suggestions[0];
+      if (cweSolutions.length > 0) {
+        expandedCWE = cweSolutions[0].cweId;
         processingSteps[3].status = 'complete';
       } else {
         processingSteps[3].status = 'error';
-        processingSteps[3].error = 'No response from LLM';
+        processingSteps[3].error = 'No solutions retrieved';
         processingSteps = processingSteps;
-        throw new Error("No suggestions received from LLM.");
+        throw new Error("No solutions received");
       }
 
     } catch (e: any) {
       console.error("Failed to fetch fix suggestions:", e);
       error = `Failed to fetch fix suggestions: ${e.message}`;
-      suggestions = [];
-      selectedSuggestion = null;
+      cweSolutions = [];
 
       const currentStepIndex = processingSteps.findIndex(s => s.status === 'running');
       if (currentStepIndex >= 0) {
@@ -139,6 +109,28 @@
       isLoading = false;
       processingSteps = processingSteps;
     }
+  }
+
+  function downloadJSON() {
+    const dataToExport = {
+      timestamp: new Date().toISOString(),
+      cweCount: cweSolutions.length,
+      solutions: cweSolutions.reduce((acc, item) => {
+        acc[`CWE-${item.cweId}`] = item.solution;
+        return acc;
+      }, {} as Record<string, string>)
+    };
+
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `cwe-solutions-${Date.now()}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   function handleStartClick() {
@@ -153,8 +145,8 @@
   $: if (cweNumbers && cweNumbers.length > 0 && !manualStart) {
     manualStart = true;
   } else if (cweNumbers && cweNumbers.length === 0) {
-    suggestions = [];
-    selectedSuggestion = null;
+    cweSolutions = [];
+    expandedCWE = null;
     error = null;
     manualStart = false;
   }
@@ -164,9 +156,13 @@
   <div class="suggestions-header">
     <div class="header-top">
       <h3 class="suggestions-title">LLM Findings Fix Suggestions</h3>
-      {#if !isLoading && cweNumbers.length > 0 && suggestions.length === 0}
+      {#if !isLoading && cweNumbers.length > 0 && cweSolutions.length === 0}
         <button class="start-button" on:click={handleStartClick} disabled={isLoading}>
           <span class="button-text">Start Analysis</span>
+        </button>
+      {:else if !isLoading && cweSolutions.length > 0}
+        <button class="save-button" on:click={downloadJSON}>
+          <span class="button-text">Save as JSON</span>
         </button>
       {/if}
     </div>
@@ -203,41 +199,32 @@
         {/each}
       </div>
     </div>
-  {/if}
-
-  <div class="suggestions-list">
-    {#if suggestions.length > 0}
-      {#each suggestions as suggestion}
-        <button
-          class="suggestion-item {selectedSuggestion?.id === suggestion.id ? 'active' : ''}"
-          on:click={() => selectedSuggestion = suggestion}
-        >
-          <span class="severity-badge {suggestion.severity.toLowerCase()}">{suggestion.severity}</span>
-          <span class="suggestion-title">{suggestion.title}</span>
-        </button>
+  {:else if cweSolutions.length > 0}
+    <div class="solutions-container">
+      {#each cweSolutions as solution (solution.cweId)}
+        <div class="cwe-item">
+          <button
+            class="cwe-header"
+            on:click={() => expandedCWE = expandedCWE === solution.cweId ? null : solution.cweId}
+          >
+            <span class="cwe-badge">CWE-{solution.cweId}</span>
+            <span class="expand-icon">{expandedCWE === solution.cweId ? '▼' : '▶'}</span>
+          </button>
+          {#if expandedCWE === solution.cweId}
+            <div class="cwe-solution">
+              <p>{solution.solution}</p>
+            </div>
+          {/if}
+        </div>
       {/each}
-    {:else if !isLoading && !error && cweNumbers.length === 0}
-      <div class="suggestion-detail no-suggestions">
-        <p>No CWE findings available. Run a scan first.</p>
-      </div>
-    {:else if !isLoading && !error && cweNumbers.length > 0}
-      <div class="suggestion-detail no-suggestions">
-        <p>Click "Start Analysis" to generate fix suggestions.</p>
-      </div>
-    {/if}
-  </div>
-
-  {#if selectedSuggestion}
-    <div class="suggestion-detail">
-      <h4 class="detail-title">{selectedSuggestion.title}</h4>
-      <p class="detail-description">{selectedSuggestion.description}</p>
-      <div class="code-block">
-        <pre><code>{selectedSuggestion.code}</code></pre>
-      </div>
     </div>
-  {:else if !isLoading && !error && suggestions.length === 0}
-    <div class="suggestion-detail no-suggestions">
-      <p>Results will appear here after analysis completes.</p>
+  {:else if !isLoading && !error && cweNumbers.length === 0}
+    <div class="empty-state">
+      <p>No CWE findings available. Run a scan first.</p>
+    </div>
+  {:else if !isLoading && !error && cweNumbers.length > 0}
+    <div class="empty-state">
+      <p>Click "Start Analysis" to research CWE fixes.</p>
     </div>
   {/if}
 </div>
@@ -272,7 +259,8 @@
     margin: 0;
   }
 
-  .start-button {
+  .start-button,
+  .save-button {
     padding: 0.6rem 1.2rem;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
@@ -285,16 +273,27 @@
     white-space: nowrap;
   }
 
-  .start-button:hover:not(:disabled) {
+  .save-button {
+    background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+  }
+
+  .start-button:hover:not(:disabled),
+  .save-button:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
   }
 
-  .start-button:active:not(:disabled) {
+  .save-button:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(102, 187, 106, 0.4);
+  }
+
+  .start-button:active:not(:disabled),
+  .save-button:active:not(:disabled) {
     transform: translateY(0);
   }
 
-  .start-button:disabled {
+  .start-button:disabled,
+  .save-button:disabled {
     opacity: 0.6;
     cursor: not-allowed;
   }
@@ -443,98 +442,84 @@
     font-weight: 500;
   }
 
-  .suggestions-list {
+  .solutions-container {
+    flex: 1;
     padding: 1rem;
-    border-bottom: 2px solid #ecf0f1;
+    overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
-  .suggestion-item {
-    padding: 0.9rem 1rem;
-    background: #f8f9fa;
-    border: 2px solid transparent;
+  .cwe-item {
+    border: 2px solid #ecf0f1;
     border-radius: 6px;
+    overflow: hidden;
+    background: #f8f9fa;
+  }
+
+  .cwe-header {
+    width: 100%;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: none;
     cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    transition: all 0.2s;
-    text-align: left;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+    font-weight: 500;
   }
 
-  .suggestion-item:hover {
-    background: #e9ecef;
+  .cwe-header:hover {
+    background: #ecf0f1;
   }
 
-  .suggestion-item.active {
-    background: #e3f2fd;
-    border-color: #3498db;
-  }
-
-  .severity-badge {
-    padding: 0.3rem 0.7rem;
+  .cwe-badge {
+    padding: 0.4rem 0.8rem;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
     border-radius: 4px;
-    font-size: 0.75rem;
     font-weight: 600;
-    text-transform: uppercase;
+    font-size: 0.85rem;
   }
 
-  .severity-badge.critical {
-    background-color: #fee;
-    color: #c0392b;
+  .expand-icon {
+    color: #7f8c8d;
+    font-size: 0.75rem;
+    transition: transform 0.2s ease;
   }
 
-  .severity-badge.high {
-    background-color: #fff3e0;
-    color: #e67e22;
-  }
-
-  .suggestion-detail {
-    flex: 1;
-    padding: 1.5rem;
+  .cwe-solution {
+    padding: 1.25rem;
+    background: white;
+    border-top: 2px solid #ecf0f1;
+    max-height: 300px;
     overflow-y: auto;
   }
 
-  .detail-title {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #2c3e50;
-    margin-bottom: 0.75rem;
-  }
-
-  .detail-description {
-    font-size: 0.95rem;
-    color: #7f8c8d;
-    line-height: 1.6;
-    margin-bottom: 1.25rem;
-  }
-
-  .code-block {
-    background-color: #2c3e50;
-    border-radius: 6px;
-    padding: 1.25rem;
-    overflow-x: auto;
-  }
-
-  .code-block pre {
+  .cwe-solution p {
     margin: 0;
+    font-size: 0.9rem;
+    color: #2c3e50;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
-  .code-block code {
-    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-    font-size: 0.85rem;
-    color: #ecf0f1;
-    line-height: 1.5;
-  }
-
-  .no-suggestions {
+  .empty-state {
     display: flex;
     justify-content: center;
     align-items: center;
     color: #7f8c8d;
     font-size: 1.1rem;
+    flex: 1;
+  }
+
+  .empty-state p {
+    margin: 0;
   }
 
   .loading-indicator {
