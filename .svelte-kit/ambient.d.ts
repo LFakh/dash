@@ -43,6 +43,8 @@ declare module '$env/static/private' {
 	export const PG_DATABASE: string;
 	export const PG_USER: string;
 	export const PG_PASSWORD: string;
+	export const VITE_SUPABASE_ANON_KEY: string;
+	export const VITE_SUPABASE_URL: string;
 	export const COLORTERM: string;
 	export const TERM: string;
 	export const LSCOLORS: string;
@@ -178,6 +180,8 @@ declare module '$env/dynamic/private' {
 		PG_DATABASE: string;
 		PG_USER: string;
 		PG_PASSWORD: string;
+		VITE_SUPABASE_ANON_KEY: string;
+		VITE_SUPABASE_URL: string;
 		COLORTERM: string;
 		TERM: string;
 		LSCOLORS: string;
