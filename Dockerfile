@@ -1,32 +1,40 @@
-# Stage 1: Build the Full-stack dashboard
-FROM docker.io/library/node:22-alpine AS build
+FROM node:25-alpine AS builder
 
 WORKDIR /app
 
-# Copy and install dependencies
-COPY package.json package-lock.json* ./
+# Install your dependencies
+COPY package*.json ./
 RUN npm install
 
-# Copy app source code and build
+# Download CWE XML
+ADD https://cwe.mitre.org/data/xml/cwec_latest.xml.zip .
+
+# Install unzip tool
+RUN apk add --no-cache unzip
+
+# Unzip the downloaded file
+RUN unzip cwec_latest.xml.zip && rm cwec_latest.xml.zip
+
+# Copy the XML-to-JSON script
+COPY scripts/cwe-xml-to-json.mjs .
+
+# Convert XML to JSON
+RUN node cwe-xml-to-json.mjs
+
+# Copy the rest of your app and build
 COPY . .
+
 RUN npm run build
 
-# Stage 2: Create production image
-FROM docker.io/library/node:22-alpine AS production
+FROM node:25-alpine as production
 
 WORKDIR /app
 
-# Copy production dependencies from build stage
-COPY --from=build /app/node_modules ./node_modules
-# Copy SvelteKit build output
-COPY --from=build /app/build ./build
-# Set a non-root user to run the app
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-USER appuser
+# Copy node_modules and build from builder
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/build ./build
+COPY --from=builder /app/static/cwe-mitigations.json ./static/cwe-mitigations.json
 
-# Expose the port the app will run on
+USER node
 EXPOSE 3000
-
-# The command to start the Node.js server
-# SvelteKit with adapter-node outputs a server to the 'build' directory.
 CMD ["node", "build/index.js"]

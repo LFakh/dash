@@ -30,7 +30,7 @@
     "whatwg-encoding": "@exodus/bytes"
   },
   "dependencies": {
-    "@mendable/firecrawl-js": "^4.15.4",
+    "fast-xml-parser": "^5.4.2",
     "pg": "^8.19.0"
   }
 }

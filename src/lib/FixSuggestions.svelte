@@ -17,9 +17,8 @@
   let isLoading = false;
   let error: string | null = null;
   let processingSteps: ProcessingStep[] = [
-    { name: 'Initializing Request', status: 'pending' },
-    { name: 'Researching CWE Data', status: 'pending' },
-    { name: 'Fetching Solutions', status: 'pending' },
+    { name: 'Loading CWE Data', status: 'pending' },
+    { name: 'Finding Mitigations', status: 'pending' },
     { name: 'Formatting Results', status: 'pending' }
   ];
   let manualStart = false;
@@ -36,9 +35,8 @@
     cweSolutions = [];
     expandedCWE = null;
     processingSteps = [
-      { name: 'Initializing Request', status: 'pending' },
-      { name: 'Researching CWE Data', status: 'pending' },
-      { name: 'Fetching Solutions', status: 'pending' },
+      { name: 'Loading CWE Data', status: 'pending' },
+      { name: 'Finding Mitigations', status: 'pending' },
       { name: 'Formatting Results', status: 'pending' }
     ];
 
@@ -46,53 +44,56 @@
       processingSteps[0].status = 'running';
       processingSteps = processingSteps;
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+      const response = await fetch('/cwe-mitigations.json');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      interface CWEData {
+        id: number;
+        name: string;
+        description: string;
+        mitigations: { phase: string; description: string }[];
+      }
+      const allCweMitigations: CWEData[] = await response.json();
 
       processingSteps[0].status = 'complete';
       processingSteps[1].status = 'running';
       processingSteps = processingSteps;
 
-      const response = await fetch('/api/research', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cweNumbers: cweNumbers,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+      const foundSolutions: CWESolution[] = [];
+      for (const cweNum of cweNumbers) {
+        const cwe = allCweMitigations.find(item => item.id === cweNum);
+        if (cwe) {
+          let solutionText = '';
+          if (cwe.mitigations && cwe.mitigations.length > 0) {
+            solutionText = cwe.mitigations.map(mit => `- Phase: ${mit.phase || 'N/A'}\n  Description: ${mit.description}`).join('\n\n');
+          } else {
+            solutionText = `No specific mitigations found for CWE-${cweNum} in the local data.`;
+            if (cwe.description) {
+              solutionText += `\n\nCWE Description: ${cwe.description}`;
+            }
+          }
+          foundSolutions.push({ cweId: cweNum, solution: solutionText });
+        } else {
+          foundSolutions.push({ cweId: cweNum, solution: `CWE-${cweNum}: Details not found in local data.` });
+        }
       }
 
       processingSteps[1].status = 'complete';
       processingSteps[2].status = 'running';
       processingSteps = processingSteps;
 
-      const researchData = await response.json();
-
-      if (!researchData.success || !researchData.data) {
-        throw new Error("Failed to retrieve research data");
-      }
-
-      processingSteps[2].status = 'complete';
-      processingSteps[3].status = 'running';
-      processingSteps = processingSteps;
-
-      cweSolutions = Object.entries(researchData.data).map(([cweKey, solution], index) => ({
-        cweId: parseInt(cweKey.replace('CWE-', '')),
-        solution: solution as string
-      }));
+      cweSolutions = foundSolutions;
 
       if (cweSolutions.length > 0) {
         expandedCWE = cweSolutions[0].cweId;
-        processingSteps[3].status = 'complete';
+        processingSteps[2].status = 'complete';
       } else {
-        processingSteps[3].status = 'error';
-        processingSteps[3].error = 'No solutions retrieved';
+        processingSteps[2].status = 'error';
+        processingSteps[2].error = 'No solutions retrieved or found for the provided CWEs.';
         processingSteps = processingSteps;
-        throw new Error("No solutions received");
+        throw new Error("No solutions retrieved or found for the provided CWEs.");
       }
 
     } catch (e: any) {
@@ -155,7 +156,7 @@
 <div class="fix-suggestions">
   <div class="suggestions-header">
     <div class="header-top">
-      <h3 class="suggestions-title">LLM Findings Fix Suggestions</h3>
+      <h3 class="suggestions-title">CWE Fix Suggestions</h3>
       {#if !isLoading && cweNumbers.length > 0 && cweSolutions.length === 0}
         <button class="start-button" on:click={handleStartClick} disabled={isLoading}>
           <span class="button-text">Start Analysis</span>
