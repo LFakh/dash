@@ -35,6 +35,8 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/build ./build
 COPY --from=builder /app/static/cwe-mitigations.json ./static/cwe-mitigations.json
 
+RUN mkdir -p /var/log/dash && chown node:node /var/log/dash
+
 USER node
 EXPOSE 3000
 CMD ["node", "build/index.js"]

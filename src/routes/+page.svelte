@@ -21,6 +21,14 @@
 <div class="dashboard">
   <header class="header">
     <h1 class="logo">SecureVault</h1>
+    {#if data.user}
+      <div class="header-right">
+        <span>Welcome, {data.user.name}</span>
+        <form action="/logout" method="POST">
+          <button type="submit" class="logout-btn">Logout</button>
+        </form>
+      </div>
+    {/if}
   </header>
 
   <main class="main-content">
@@ -79,7 +87,31 @@
     color: white;
     padding: 1.5rem 2rem;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .logout-btn {
+    background: transparent;
+    border: 1px solid white;
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .logout-btn:hover {
+    background-color: #34495e;
+  }
+
 
   .logo {
     font-size: 1.8rem;

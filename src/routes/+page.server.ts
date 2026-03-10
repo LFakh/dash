@@ -1,7 +1,7 @@
 import type { PageServerLoad } from './$types';
 import { getFindings } from '$lib/server/findings';
 
-export const load: PageServerLoad = async () => {
+export const load: PageServerLoad = async ({ locals }) => {
   try {
     const findings = await getFindings();
 
@@ -21,12 +21,14 @@ export const load: PageServerLoad = async () => {
     }
 
     return {
+      user: locals.user,
       findings,
       stats
     };
   } catch (error) {
     console.error(error);
     return {
+      user: locals.user,
       findings: [],
       stats: { critical: 0, high: 0, medium: 0, low: 0, info: 0 },
       error: 'Failed to load findings.'
