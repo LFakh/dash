@@ -2,13 +2,10 @@
 	"/": [
 		"src/routes/+page.server.ts"
 	],
-	"/api/llm/chat": [
-		"src/routes/api/llm/chat/+server.ts"
+	"/login": [
+		"src/routes/login/+page.server.ts"
 	],
-	"/api/llm/prioritize": [
-		"src/routes/api/llm/prioritize/+server.ts"
-	],
-	"/api/research": [
-		"src/routes/api/research/+server.ts"
+	"/logout": [
+		"src/routes/logout/+server.ts"
 	]
 }

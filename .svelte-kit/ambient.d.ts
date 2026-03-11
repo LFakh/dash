@@ -38,13 +38,6 @@
  * The above values will be the same _even if_ different values for `ENVIRONMENT` or `PUBLIC_BASE_URL` are set at runtime, as they are statically replaced in your code with their build time values.
  */
 declare module '$env/static/private' {
-	export const PG_HOST: string;
-	export const PG_PORT: string;
-	export const PG_DATABASE: string;
-	export const PG_USER: string;
-	export const PG_PASSWORD: string;
-	export const VITE_SUPABASE_ANON_KEY: string;
-	export const VITE_SUPABASE_URL: string;
 	export const COLORTERM: string;
 	export const TERM: string;
 	export const LSCOLORS: string;
@@ -175,13 +168,6 @@ declare module '$env/static/public' {
  */
 declare module '$env/dynamic/private' {
 	export const env: {
-		PG_HOST: string;
-		PG_PORT: string;
-		PG_DATABASE: string;
-		PG_USER: string;
-		PG_PASSWORD: string;
-		VITE_SUPABASE_ANON_KEY: string;
-		VITE_SUPABASE_URL: string;
 		COLORTERM: string;
 		TERM: string;
 		LSCOLORS: string;

@@ -1,21 +1,41 @@
 <script lang="ts">
   import { browser } from '$app/environment';
 
+  interface CWESolution {
+    cweId: number;
+    solution: string;
+  }
+
   let messages: { role: string; content: string; type?: 'llm_response' }[] = []
   let inputMessage = ''
   let isLoading = false;
+  let cweContext: CWESolution[] = [];
+  let showCweContext = false;
 
-  // Function to simulate sending data to the LLM endpoint
+  export function receiveCWEData(cweSolutions: CWESolution[]) {
+    cweContext = cweSolutions;
+    showCweContext = true;
+
+    const contextMessage = `CWE Solutions have been loaded:\n${cweSolutions.map(s => `- CWE-${s.cweId}`).join('\n')}\n\nYou can now ask questions about these findings and their solutions.`;
+    messages = [...messages, { role: 'assistant', content: contextMessage }];
+  }
+
   async function sendMessage() {
     if (!inputMessage.trim() || isLoading) return;
 
-    const userMessage = inputMessage;
-    messages = [...messages, { role: 'user', content: userMessage }];
+    let userMessage = inputMessage;
+
+    if (cweContext.length > 0 && showCweContext) {
+      const contextInfo = `Context: CWE Solutions loaded:\n${cweContext.map(s => `CWE-${s.cweId}: ${s.solution}`).join('\n\n')}\n\nUser question: ${userMessage}`;
+      userMessage = contextInfo;
+      showCweContext = false;
+    }
+
+    messages = [...messages, { role: 'user', content: inputMessage }];
     inputMessage = '';
     isLoading = true;
 
     try {
-      // Use the same API endpoint and format as the original chat app
       const response = await fetch('https://free-api.cveoy.top/v3/completions', {
         method: 'POST',
         headers: {
@@ -85,7 +105,12 @@
 <div class="chat-interface">
   <div class="chat-header">
     <h3 class="chat-title">Raybot Chat Interface</h3>
-    <span class="status-indicator" class:loading={isLoading}>{isLoading ? 'Thinking...' : 'Online'}</span>
+    <div class="header-right">
+      {#if cweContext.length > 0}
+        <span class="context-indicator">CWE Context Loaded ({cweContext.length})</span>
+      {/if}
+      <span class="status-indicator" class:loading={isLoading}>{isLoading ? 'Thinking...' : 'Online'}</span>
+    </div>
   </div>
 
   <div class="messages-container">
@@ -131,6 +156,21 @@
     font-size: 1.1rem;
     font-weight: 600;
     color: #2c3e50;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .context-indicator {
+    font-size: 0.8rem;
+    color: #1e88e5;
+    font-weight: 600;
+    padding: 0.4rem 0.8rem;
+    background-color: #e3f2fd;
+    border-radius: 12px;
   }
 
   .status-indicator {

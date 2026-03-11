@@ -6,6 +6,8 @@
 
   export let data;
 
+  let chatInterface: ChatInterface;
+
   const severityColors = {
     critical: '#e74c3c',
     high: '#f39c12',
@@ -14,8 +16,13 @@
     info: '#95a5a6'
   };
 
-  // Extract unique CWE numbers from findings to pass to FixSuggestions
   $: cweNumbers = [...new Set(data.findings.map(f => f.cwe).filter(cwe => cwe !== null && cwe !== undefined))];
+
+  function handleSendToChat(cweSolutions: any) {
+    if (chatInterface && chatInterface.receiveCWEData) {
+      chatInterface.receiveCWEData(cweSolutions);
+    }
+  }
 </script>
 
 <div class="dashboard">
@@ -48,10 +55,10 @@
 
       <div class="llm-section">
         <div class="chat-wrapper">
-          <ChatInterface />
+          <ChatInterface bind:this={chatInterface} />
         </div>
         <div class="suggestions-wrapper">
-          <FixSuggestions cweNumbers={cweNumbers} /> <!-- Pass cweNumbers prop -->
+          <FixSuggestions cweNumbers={cweNumbers} onSendToChat={handleSendToChat} />
         </div>
       </div>
 

@@ -27,19 +27,16 @@ export {};
 
 declare module "$app/types" {
 	export interface AppTypes {
-		RouteId(): "/" | "/api" | "/api/llm" | "/api/llm/chat" | "/api/llm/prioritize" | "/api/research";
+		RouteId(): "/" | "/login" | "/logout";
 		RouteParams(): {
 			
 		};
 		LayoutParams(): {
 			"/": Record<string, never>;
-			"/api": Record<string, never>;
-			"/api/llm": Record<string, never>;
-			"/api/llm/chat": Record<string, never>;
-			"/api/llm/prioritize": Record<string, never>;
-			"/api/research": Record<string, never>
+			"/login": Record<string, never>;
+			"/logout": Record<string, never>
 		};
-		Pathname(): "/" | "/api/llm/chat" | "/api/llm/prioritize" | "/api/research";
+		Pathname(): "/" | "/login" | "/logout";
 		ResolvedPathname(): `${"" | `/${string}`}${ReturnType<AppTypes['Pathname']>}`;
 		Asset(): string & {};
 	}

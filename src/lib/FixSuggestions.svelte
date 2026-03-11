@@ -11,6 +11,7 @@
   }
 
   export let cweNumbers: number[] = [];
+  export let onSendToChat: ((data: CWESolution[]) => void) | null = null;
 
   let cweSolutions: CWESolution[] = [];
   let expandedCWE: number | null = null;
@@ -134,6 +135,12 @@
     URL.revokeObjectURL(url);
   }
 
+  function sendToChat() {
+    if (onSendToChat && cweSolutions.length > 0) {
+      onSendToChat(cweSolutions);
+    }
+  }
+
   function handleStartClick() {
     if (cweNumbers.length === 0) {
       error = "No CWE numbers available to process.";
@@ -162,9 +169,16 @@
           <span class="button-text">Start Analysis</span>
         </button>
       {:else if !isLoading && cweSolutions.length > 0}
-        <button class="save-button" on:click={downloadJSON}>
-          <span class="button-text">Save as JSON</span>
-        </button>
+        <div class="button-group">
+          <button class="save-button" on:click={downloadJSON}>
+            <span class="button-text">Save as JSON</span>
+          </button>
+          {#if onSendToChat}
+            <button class="send-chat-button" on:click={sendToChat}>
+              <span class="button-text">Send to Chat</span>
+            </button>
+          {/if}
+        </div>
       {/if}
     </div>
     {#if isLoading}
@@ -253,6 +267,11 @@
     gap: 1rem;
   }
 
+  .button-group {
+    display: flex;
+    gap: 0.75rem;
+  }
+
   .suggestions-title {
     font-size: 1.1rem;
     font-weight: 600;
@@ -276,6 +295,28 @@
 
   .save-button {
     background: linear-gradient(135deg, #66bb6a 0%, #43a047 100%);
+  }
+
+  .send-chat-button {
+    padding: 0.6rem 1.2rem;
+    background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+
+  .send-chat-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(66, 165, 245, 0.4);
+  }
+
+  .send-chat-button:active:not(:disabled) {
+    transform: translateY(0);
   }
 
   .start-button:hover:not(:disabled),

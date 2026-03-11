@@ -1,9 +1,7 @@
 import { redirect } from '@sveltejs/kit';
-import type { Actions } from './$types';
+import type { RequestHandler } from './$types';
 
-export const actions: Actions = {
-  default: async ({ cookies }) => {
-    cookies.delete('session', { path: '/' });
-    throw redirect(302, '/login');
-  },
+export const POST: RequestHandler = async ({ cookies }) => {
+  cookies.delete('session', { path: '/' });
+  throw redirect(302, '/login');
 };
